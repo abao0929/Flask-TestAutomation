@@ -8,13 +8,15 @@
       <div class="me-4"><strong>Page:</strong> {{ locator.page }}</div>
       <div class="me-4"><strong>Operate:</strong> {{ locator.operate.value }}</div>
       <div class="mt-2 ms-auto d-flex gap-2">
+        <!-- 编辑图标，走a标签触发modal -->
         <a href="javascript:;" data-bs-toggle="modal" data-bs-target="#editLocatorModal{{ locator.id }}"
-          class="text-warning icon-hover" title="编辑">
+          class="text-warning p-0 border-0 bg-transparent icon-hover" title="编辑" style="box-shadow:none;">
           <i class="bi bi-pencil fs-5"></i>
         </a>
-        <form method="POST" action="{{ url_for('locator_view.delete_locator_route', locator_id=locator.id) }}" class="d-inline">
-          <button type="submit" class="btn p-0 border-0 bg-transparent text-danger icon-hover" title="删除"
-            style="box-shadow:none;">
+        <!-- 删除图标，仍用form提交但无任何按钮外观 -->
+        <form class="d-inline delete-locator-form" data-locator-id="{{ locator.id }}">
+          <button type="button" class="text-danger p-0 border-0 bg-transparent icon-hover delete-locator-btn"
+                  title="删除" style="box-shadow:none;">
             <i class="bi bi-trash fs-5"></i>
           </button>
         </form>
@@ -91,3 +93,21 @@
     {% endif %}
   </ul>
 </nav>
+
+<div class="modal fade" id="deleteLocatorModal" tabindex="-1" aria-labelledby="deleteLocatorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteLocatorModalLabel">确认删除</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+      </div>
+      <div class="modal-body">
+        你确定要删除这个 Locator 吗？
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteLocatorBtn">确认删除</button>
+      </div>
+    </div>
+  </div>
+</div>
