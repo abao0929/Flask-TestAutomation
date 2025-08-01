@@ -1,0 +1,9 @@
+1、制作制作组件 operate component
+    operate+name
+
+2、操作顺序->操作流程文件
+
+后端：
+    操作流程文件分析
+    具体操作 basepage的内容，封装
+    

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <div class="row" style="height:80vh;">
+    <!-- 左侧列表 -->
+    <div class="col-4 border-end overflow-auto" style="height:100%;">
+      <h5 class="my-3">所有 Locator</h5>
+      <div class="list-group" id="all-locators-list">
+        {% for locator in locators %}
+        <button type="button" class="list-group-item list-group-item-action"
+                data-id="{{ locator.id }}"
+                data-operate="{{ locator.operate.value }}"
+                data-name="{{ locator.name }}"
+                data-page="{{ locator.page }}"
+                data-method="{{ locator.method.value }}"
+                data-value="{{ locator.value }}">
+          <span class="badge bg-primary me-2">{{ locator.operate.value }}</span>
+          <span>{{ locator.name }}</span>
+          <span class="text-muted ms-2 small">[{{ locator.page }}]</span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    <!-- 右侧步骤区 -->
+    <div class="col-8" style="height:100%;">
+      <h5 class="my-3">操作步骤</h5>
+      <ol class="list-group list-group-numbered" id="steps-list"></ol>
+      <div class="mt-4">
+        <button id="generate-json" class="btn btn-primary">生成操作流程文件</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

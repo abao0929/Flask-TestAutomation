@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="my-4">Locator Management</h2>
+
+<!-- 添加新 Locator 区域（上传 + 手动按钮） -->
+<div class="card p-3 mb-4">
+
+  <div>
+    <h5 class="mb-3">增加新locator</h5>
+    <!-- 上传 Excel 表单 -->
+    <form method="POST" action="{{ url_for('locator_view.upload_excel') }}" enctype="multipart/form-data" class="mb-3">
+      <div class="row align-items-center">
+        <div class="col-9">
+          <input type="file" name="excel_file" class="form-control form-control-sm" required>
+        </div>
+        <div class="col-3 text-end">
+          <button type="submit" class="btn btn-success btn-sm w-100">Import</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  
+  <div class="text-end">
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLocatorModal">
+      Add Locator
+    </button>
+    <button class="btn btn-outline-secondary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#managePagesModal">
+      Manage Pages
+    </button>
+  </div>
+
+</div>
+
+<!-- 数据展示 + 分页区域（局部刷新容器） -->
+<div class="card p-3 mb-4">
+    <div id="locator-list-partial">
+        {% include "locator_list_partial.html" %}
+    </div>
+</div>
+
+<!-- 手动添加 Modal 弹窗 -->
+<div class="modal fade" id="addLocatorModal" tabindex="-1" aria-labelledby="addLocatorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('locator_view.create_locator') }}">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addLocatorModalLabel">Add Locator</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <input type="text" name="name" placeholder="Name" required class="form-control" autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <select name="method" class="form-control" required>
+              {% for method in methods %}
+              <option value="{{ method.name }}">{{ method.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <input type="text" name="value" placeholder="Value" required class="form-control" autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <select name="page" required class="form-control">
+              {% for p in pages %}
+                <option value="{{ p.name }}"
+                  {% if locator and locator.page == p.name %}selected{% endif %}>
+                  {{ p.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <select name="operate" class="form-control" required>
+              {% for op in operates %}
+              <option value="{{ op.name }}">{{ op.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Add Locator</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="managePagesModal" tabindex="-1" aria-labelledby="managePagesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="managePagesLabel">Manage Pages</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>URL</th>
+              <th style="width: 120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for page in pages %}
+            <tr data-page-id="{{ page.id }}">
+              <td>
+                <span class="page-name-text">{{ page.name }}</span>
+                <input type="text" name="name" class="form-control form-control-sm d-none" value="{{ page.name }}">
+              </td>
+              <td>
+                <span class="page-url-text">{{ page.url or '' }}</span>
+                <input type="text" name="url" class="form-control form-control-sm d-none" value="{{ page.url or '' }}">
+              </td>
+              <td>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm edit-page-btn">Edit</button>
+                  <form method="POST" action="{{ url_for('page_view.delete_page', page_id=page.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                      onclick="return confirm('Are you sure you want to delete this page?');">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <!-- 单独 Add 表单 -->
+        <div class="border-top pt-2 mt-2">
+          <h6>Add New Page</h6>
+          <form method="POST" action="{{ url_for('page_view.add_page') }}" class="row g-2">
+            <div class="col">
+              <input type="text" name="name" class="form-control form-control-sm" placeholder="Page Name" required>
+            </div>
+            <div class="col">
+              <input type="text" name="url" class="form-control form-control-sm" placeholder="URL">
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-success btn-sm">Add</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
