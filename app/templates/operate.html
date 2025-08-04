@@ -26,9 +26,33 @@
       <h5 class="my-3">操作步骤</h5>
       <ol class="list-group list-group-numbered" id="steps-list"></ol>
       <div class="mt-4">
-        <button id="generate-json" class="btn btn-primary">生成操作流程文件</button>
+        <button id="show-generate-json-modal" class="btn btn-primary">生成操作流程文件</button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- 生成流程文件弹窗 -->
+<div class="modal fade" id="generateJsonModal" tabindex="-1" aria-labelledby="generateJsonModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="generateJsonModalLabel">导出操作流程</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="jsonFileName" class="form-label">文件名</label>
+          <input type="text" class="form-control" id="jsonFileName" value="operate_flow.json" required>
+          <div class="form-text">请不要加“.json”后缀，系统会自动补全。</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="confirm-generate-json-btn">生成并下载</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
