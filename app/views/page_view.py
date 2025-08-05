@@ -1,73 +1,56 @@
-from flask import Blueprint, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, request, jsonify, current_app
+from werkzeug.utils import secure_filename
+import os
 from app.models.pages import Page
+from app.controllers.pages.pages_controller import (
+    add_page,
+    edit_page,
+    get_page_by_id,
+    delete_page,
+    get_all_pages,
+)
+from app.models.locators import Locator, LocatorMethod, LocatorOperate
 from app.extensions import db
 
-page_view = Blueprint('page_view', __name__)
+page_api = Blueprint("page_api", __name__, url_prefix="/api/page")
 
-def is_ajax():
-    return request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json'
+# 1. 获取列表
+@page_api.route("", methods=["GET"])
+def locator_list():
+    data = get_all_pages()
+    return jsonify(data)
+    
 
-@page_view.route('/page/add', methods=['POST'])
-def add_page():
-    name = request.form.get('name', '').strip()
-    url_ = request.form.get('url', '').strip()
-    if not name:
-        msg = "页面名不能为空"
-        status = "danger"
-        success = False
-    elif Page.query.filter(db.func.lower(Page.name) == name.lower()).first():
-        msg = "页面已存在"
-        status = "warning"
-        success = False
-    else:
-        page = Page(name=name, url=url_)
-        db.session.add(page)
-        db.session.commit()
-        msg = "添加页面成功"
-        status = "success"
-        success = True
+# 2. 新增
+@page_api.route("/add", methods=["POST"])
+def create_locator():
+    data = request.json
+    try:
+        add_page(
+            data["name"], data["url"]
+        )
+        return jsonify({"success": True, "msg": "添加成功"})
+    except Exception as e:
+        return jsonify({"success": False, "msg": str(e)})
 
-    if is_ajax():
-        return jsonify({'success': success, 'msg': msg, 'status': status})
-    else:
-        flash(msg, status)
-        return redirect(url_for('locator_view.locator_management'))
-
-@page_view.route('/page/edit/<int:page_id>', methods=['POST'])
-def edit_page(page_id):
-    page = Page.query.get(page_id)
-    if not page:
-        if is_ajax():
-            return jsonify({'success': False, 'msg': "Not Found"}), 404
-        return "Not Found", 404
-
-    page.name = request.form.get('name', page.name)
-    page.url = request.form.get('url', page.url)
-    db.session.commit()
-    msg = "修改页面成功"
-
-    if is_ajax():
-        return jsonify({'success': True, 'msg': msg})
-    else:
-        flash(msg, "success")
-        return redirect(url_for('locator_view.locator_management'))
-
-@page_view.route('/page/delete/<int:page_id>', methods=['POST'])
-def delete_page(page_id):
-    page = Page.query.get(page_id)
-    if not page:
-        msg = "页面未找到"
-        status = "warning"
-        success = False
-    else:
-        db.session.delete(page)
-        db.session.commit()
-        msg = "删除页面成功"
-        status = "success"
-        success = True
-
-    if is_ajax():
-        return jsonify({'success': success, 'msg': msg, 'status': status})
-    else:
-        flash(msg, status)
-        return redirect(url_for('locator_view.locator_management'))
+# 编辑
+@page_api.route("/edit/<int:id>", methods=["PUT"])
+def edit_record(id):
+    data = request.json
+    try:
+        edit_page(
+            id,
+            data["name"], data["url"]
+        )
+        return jsonify({"success": True, "msg": "编辑成功"})
+    except Exception as e:
+        return jsonify({"success": False, "msg": str(e)})
+    
+# 删除
+@page_api.route("/<int:id>", methods=["DELETE"])
+def delete_record(id):
+    try:
+        delete_page(id)
+        return jsonify({"success": True, "msg": "删除成功"})
+    except Exception as e:
+        return jsonify({"success": False, "msg": str(e)})

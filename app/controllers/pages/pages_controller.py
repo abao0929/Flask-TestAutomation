@@ -1,27 +1,22 @@
 from app.extensions import db
 from app.models.pages import Page
 
-def save_page(name,url, page_id=None):
-    """
-    新建或更新一个 page。
-    如果 page 为 None，则新建；否则更新指定 id 的 page。
-    返回 page 实例。
-    """
+def add_page(name,url):
 
-    if page_id is None:
-        page = Page(
-            name=name,
-            url = url
-        )
-        db.session.add(page)
-    else:
-        page = Page.query.get(page_id)
-        if not page:
-            raise ValueError("page not found")
-        page.name = name
-        page.url = url
+    page = Page(
+        name = name,
+        url = url
+    )
+    db.session.add(page)
         
 
+    db.session.commit()
+    return page
+
+def edit_page(page_id, name, url):
+    page = Page.query.get(page_id)
+    page.name=name
+    page.url=url
     db.session.commit()
     return page
 
@@ -37,4 +32,12 @@ def delete_page(page_id):
     return False
 
 def get_all_pages():
-    return Page.query.all()
+    pages = Page.query.all()
+    return [
+            {
+                "id": p.id,
+                "name": p.name,
+                "url": p.url
+            }
+            for p in pages
+        ]
