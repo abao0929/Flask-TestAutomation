@@ -8,12 +8,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  Button, Input, Card, Typography, Space, Row, Col, message,
+  Button, Input, Card, Typography, Space, Row, Col, message, Select,
 } from "antd";
 const { Text } = Typography;
 
-// 单个可排序项（右侧）略，保持和前面一致
-
+// 单个可排序项
 function SortableItem({ locator, onRemove, index, onInputChange }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: locator._uid });
@@ -36,7 +35,6 @@ function SortableItem({ locator, onRemove, index, onInputChange }) {
       size="small"
       {...attributes}
       {...listeners}
-      // bodyStyle={{ padding: 12 }}
     >
       <Row align="middle" wrap={false} gutter={8}>
         <Col flex="36px">
@@ -94,17 +92,36 @@ function SortableItem({ locator, onRemove, index, onInputChange }) {
 
 export default function CustomOperateProcess() {
   const [locators, setLocators] = useState([]);
+  const [pages, setPages] = useState([]);
+  const [operates, setOperates] = useState([]);
+  const [selectedPage, setSelectedPage] = useState("");
+  const [selectedOperate, setSelectedOperate] = useState("");
   const [selected, setSelected] = useState([]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  // 获取所有 pages、operates
   useEffect(() => {
-    axios
-      .get("/api/locator")
-      .then(res => setLocators(res.data))
-      .catch(() => message.error("加载 locator 失败"));
+    axios.get("/api/page").then(res => setPages(res.data));
+    axios.get("/api/locator/operate").then(res => setOperates(res.data?.operates || []));
   }, []);
+
+  // 获取所有或筛选后的 locators
+  const fetchLocators = (page, operate) => {
+    const params = {};
+    if (page) params.page = page;
+    if (operate) params.operate = operate;
+    const url = (params.page || params.operate)
+      ? "/api/locator/filter"
+      : "/api/locator";
+    axios.get(url, { params }).then(res => setLocators(res.data));
+  };
+
+  // 初始化/筛选
+  useEffect(() => {
+    fetchLocators(selectedPage, selectedOperate);
+  }, [selectedPage, selectedOperate]);
 
   // 多次添加（每次唯一 _uid）
   const addToSelected = locator => {
@@ -139,13 +156,38 @@ export default function CustomOperateProcess() {
       <Col span={7} style={{ height: "100%", overflowY: "auto" }}>
         <Card
           title="所有可选元素"
-          // bordered={false}
           style={{ height: "100%", background: "#f9fbfc" }}
-          // bodyStyle={{ padding: 10 }}
         >
+          {/* 顶部筛选框 */}
+          <Space style={{ marginBottom: 16 }}>
+            <Select
+              style={{ width: 140 }}
+              value={selectedPage}
+              onChange={v => setSelectedPage(v)}
+              placeholder="筛选页面"
+              allowClear
+            >
+              <Select.Option value="">全部页面</Select.Option>
+              {pages.map(p => (
+                <Select.Option value={p.name} key={p.name}>{p.name}</Select.Option>
+              ))}
+            </Select>
+            <Select
+              style={{ width: 140 }}
+              value={selectedOperate}
+              onChange={v => setSelectedOperate(v)}
+              placeholder="筛选操作类型"
+              allowClear
+            >
+              <Select.Option value="">全部操作类型</Select.Option>
+              {operates.map(o => (
+                <Select.Option value={o.value} key={o.value}>{o.name}</Select.Option>
+              ))}
+            </Select>
+          </Space>
           {/* 卡片流式展示 */}
           <div style={{ display: "flex", flexDirection: "column" }}>
-            {locators.length === 0 && <Text type="secondary">加载中...</Text>}
+            {locators.length === 0 && <Text type="secondary">暂无数据</Text>}
             {locators.map(locator => (
               <Card
                 key={locator.id}
@@ -158,7 +200,6 @@ export default function CustomOperateProcess() {
                   borderColor: "#e6f4ff",
                   transition: "box-shadow 0.2s",
                 }}
-                // bodyStyle={{ padding: 14 }}
               >
                 <Space direction="vertical" size={4}>
                   <Text strong>{locator.name}</Text>
@@ -171,13 +212,11 @@ export default function CustomOperateProcess() {
         </Card>
       </Col>
 
-      {/* 右侧可排序区（与前述一致） */}
+      {/* 右侧可排序区 */}
       <Col span={17} style={{ height: "100%" }}>
         <Card
           title="已添加 & 可排序区"
-          // bordered={false}
           style={{ height: "100%", overflowY: "auto" }}
-          // bodyStyle={{ padding: 12 }}
         >
           <DndContext
             sensors={sensors}

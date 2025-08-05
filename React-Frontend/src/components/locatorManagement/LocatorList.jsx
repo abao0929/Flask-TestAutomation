@@ -9,104 +9,26 @@ import {
   Form,
   Input,
   Modal,
+  Row,
+  Col,
 } from "antd";
-
-// Modal 组件
-function LocatorModal({
-  visible,
-  onCancel,
-  onOk,
-  record,
-  form,
-  title,
-  methods = [],
-  operates = [],
-}) {
-  useEffect(() => {
-    if (visible) {
-      if (record) {
-        form.setFieldsValue(record);
-      } else {
-        form.resetFields();
-      }
-    }
-  }, [visible, record, form]);
-
-  return (
-    <Modal
-      title={title}
-      open={visible}
-      onCancel={onCancel}
-      onOk={onOk}
-      okText="保存"
-      cancelText="取消"
-      destroyOnHidden
-    >
-      <Form form={form} layout="vertical">
-        <Form.Item
-          label="Name"
-          name="name"
-          rules={[{ required: true, message: "请输入名称" }]}
-        >
-          <Input autoComplete="off"/>
-        </Form.Item>
-        <Form.Item
-        label="方式"
-        name="method"
-        rules={[{ required: true, message: "请选择方式" }]}
-        >
-        <Select
-            placeholder="请选择方式"
-            options={methods.map((m) => ({
-            label: m.name,
-            value: m.value,
-            }))}
-        />
-        </Form.Item>
-        
-        <Form.Item
-          label="Value"
-          name="value"
-          rules={[{ required: true, message: "请输入值" }]}
-        >
-          <Input autoComplete="off"/>
-        </Form.Item>
-        <Form.Item
-          label="Page"
-          name="page"
-          rules={[{ required: true, message: "请输入页面" }]}
-        >
-          <Input autoComplete="off"/>
-        </Form.Item>
-        <Form.Item
-        label="操作类型"
-        name="operate"
-        rules={[{ required: true, message: "请选择操作类型" }]}
-        >
-        <Select
-            placeholder="请选择操作类型"
-            options={operates.map((o) => ({
-            label: o.name,
-            value: o.value,
-            }))}
-        />
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
-}
 
 function LocatorList() {
   const [locators, setLocators] = useState([]);
   const [methods, setMethods] = useState([]);
   const [operates, setOperates] = useState([]);
+  const [pages, setPages] = useState([]); 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [form] = Form.useForm();
 
-  // 获取所有 locators
-  const fetchLocators = () => {
-    axios.get("/api/locator").then((res) => setLocators(res.data));
+  // 新增：筛选项
+  const [selectedPage, setSelectedPage] = useState("");      // "" 代表无筛选
+  const [selectedOperate, setSelectedOperate] = useState(""); // "" 代表无筛选
+
+  // 获取所有 pages
+  const fetchPages = () => {
+    axios.get("/api/page").then((res) => setPages(res.data));
   };
 
   // 获取 methods
@@ -123,11 +45,36 @@ function LocatorList() {
     });
   };
 
+  // 获取所有 locators
+  const fetchLocators = () => {
+    axios.get("/api/locator").then((res) => setLocators(res.data));
+  };
+
+  // 根据筛选项获取
+  const fetchFilteredLocators = (page, operate) => {
+    // page/operate 为空字符串时不带参数
+    const params = {};
+    if (page) params.page = page;
+    if (operate) params.operate = operate;
+    axios.get("/api/locator/filter", { params }).then((res) => setLocators(res.data));
+  };
+
+  // 初始化数据
   useEffect(() => {
-    fetchLocators();
+    fetchPages();
     fetchMethods();
     fetchOperates();
+    fetchLocators();
   }, []);
+
+  // 筛选项变化时重新获取
+  useEffect(() => {
+    if (selectedPage || selectedOperate) {
+      fetchFilteredLocators(selectedPage, selectedOperate);
+    } else {
+      fetchLocators();
+    }
+  }, [selectedPage, selectedOperate]);
 
   // 编辑
   const editRecord = (record) => {
@@ -159,7 +106,12 @@ function LocatorList() {
           .then((res) => {
             if (res.data.success) {
               message.success("删除成功");
-              fetchLocators();
+              // 删除后自动刷新当前筛选
+              if (selectedPage || selectedOperate) {
+                fetchFilteredLocators(selectedPage, selectedOperate);
+              } else {
+                fetchLocators();
+              }
             } else {
               message.error(res.data.msg || "删除失败");
             }
@@ -182,7 +134,12 @@ function LocatorList() {
               message.success("编辑成功");
               setModalVisible(false);
               setEditingRecord(null);
-              fetchLocators();
+              // 编辑后自动刷新当前筛选
+              if (selectedPage || selectedOperate) {
+                fetchFilteredLocators(selectedPage, selectedOperate);
+              } else {
+                fetchLocators();
+              }
             } else {
               message.error(res.data.msg || "编辑失败");
             }
@@ -193,7 +150,12 @@ function LocatorList() {
           if (res.data.success) {
             message.success("添加成功");
             setModalVisible(false);
-            fetchLocators();
+            // 新增后自动刷新当前筛选
+            if (selectedPage || selectedOperate) {
+              fetchFilteredLocators(selectedPage, selectedOperate);
+            } else {
+              fetchLocators();
+            }
           } else {
             message.error(res.data.msg || "添加失败");
           }
@@ -229,11 +191,56 @@ function LocatorList() {
     },
   ];
 
+  // Modal中自动处理编辑/新增模式
+  useEffect(() => {
+    if (modalVisible) {
+      if (editingRecord) {
+        form.setFieldsValue(editingRecord);
+      } else {
+        form.resetFields();
+      }
+    }
+  }, [modalVisible, editingRecord, form]);
+
   return (
     <div>
-      <Button type="primary" style={{ marginBottom: 16 }} onClick={addRecord}>
-        新增 Locator
-      </Button>
+      {/* 顶部筛选框 */}
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        <Col>
+          <Select
+            style={{ width: 160 }}
+            value={selectedPage}
+            onChange={value => setSelectedPage(value)}
+            allowClear
+            placeholder="筛选页面"
+            // 需要有“无”（全部）的选项
+          >
+            <Select.Option value="">全部页面</Select.Option>
+            {pages.map(p => (
+              <Select.Option value={p.name} key={p.name}>{p.name}</Select.Option>
+            ))}
+          </Select>
+        </Col>
+        <Col>
+          <Select
+            style={{ width: 160 }}
+            value={selectedOperate}
+            onChange={value => setSelectedOperate(value)}
+            allowClear
+            placeholder="筛选操作类型"
+          >
+            <Select.Option value="">全部操作类型</Select.Option>
+            {operates.map(o => (
+              <Select.Option value={o.value} key={o.value}>{o.name}</Select.Option>
+            ))}
+          </Select>
+        </Col>
+        <Col>
+          <Button type="primary" onClick={addRecord}>
+            新增 Locator
+          </Button>
+        </Col>
+      </Row>
       <Table
         columns={columns}
         dataSource={locators}
@@ -241,16 +248,72 @@ function LocatorList() {
         pagination={false}
         bordered
       />
-      <LocatorModal
-        visible={modalVisible}
+
+      <Modal
+        title={editingRecord ? "编辑" : "新增"}
+        open={modalVisible}
         onCancel={closeModal}
         onOk={submitModal}
-        record={editingRecord}
-        form={form}
-        title={editingRecord ? "编辑" : "新增"}
-        methods={methods}
-        operates={operates}
-      />
+        okText="保存"
+        cancelText="取消"
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            label="Name"
+            name="name"
+            rules={[{ required: true, message: "请输入名称" }]}
+          >
+            <Input autoComplete="off" />
+          </Form.Item>
+          <Form.Item
+            label="方式"
+            name="method"
+            rules={[{ required: true, message: "请选择方式" }]}
+          >
+            <Select
+              placeholder="请选择方式"
+              options={methods.map((m) => ({
+                label: m.name,
+                value: m.value,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Value"
+            name="value"
+            rules={[{ required: true, message: "请输入值" }]}
+          >
+            <Input autoComplete="off" />
+          </Form.Item>
+          <Form.Item
+            label="Page"
+            name="page"
+            rules={[{ required: true, message: "请输入页面" }]}
+          >
+            <Select
+              placeholder="请选择页面"
+              options={pages.map((p) => ({
+                label: p.name,
+                value: p.name,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item
+            label="操作类型"
+            name="operate"
+            rules={[{ required: true, message: "请选择操作类型" }]}
+          >
+            <Select
+              placeholder="请选择操作类型"
+              options={operates.map((o) => ({
+                label: o.name,
+                value: o.value,
+              }))}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

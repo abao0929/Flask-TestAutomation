@@ -10,6 +10,7 @@ from app.controllers.locators.locators_controller import (
     get_all_locators,
     get_all_methods,
     get_all_operates,
+    filter_locators,
 )
 from app.models.locators import Locator, LocatorMethod, LocatorOperate
 from app.extensions import db
@@ -71,3 +72,10 @@ def get_operates():
     return jsonify({
         "operates": get_all_operates(),
     })
+
+@locator_api.route("/filter", methods=["GET"])
+def filter_locator_api():
+    page = request.args.get('page')
+    operate = request.args.get('operate')
+    data = filter_locators(page=page, operate=operate)
+    return jsonify(data)

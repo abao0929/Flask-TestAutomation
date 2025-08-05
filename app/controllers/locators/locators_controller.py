@@ -92,3 +92,24 @@ def get_all_methods():
 # 获取所有的operate
 def get_all_operates():
     return [{"name": o.name, "value": o.value} for o in LocatorOperate]
+
+
+def filter_locators(page=None, operate=None):
+    query = Locator.query
+    if page:
+        query = query.filter_by(page=page)
+    if operate:
+        query = query.filter_by(operate=operate)
+    locators = query.all()
+    # 可以封装为序列化函数
+    return [
+        {
+            "id": l.id,
+            "name": l.name,
+            "method": l.method.value if hasattr(l.method, "value") else l.method,
+            "value": l.value,
+            "page": l.page,
+            "operate": l.operate.value if hasattr(l.operate, "value") else l.operate
+        }
+        for l in locators
+    ]
