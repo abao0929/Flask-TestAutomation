@@ -14,7 +14,7 @@ from app.extensions import db
 
 page_api = Blueprint("page_api", __name__, url_prefix="/api/page")
 
-# 1. 获取列表
+# 1. 获取locator列表
 @page_api.route("", methods=["GET"])
 def locator_list():
     data = get_all_pages()

@@ -8,6 +8,8 @@ from app.controllers.locators.locators_controller import (
     get_locator_by_id,
     delete_locator,
     get_all_locators,
+    get_all_methods,
+    get_all_operates,
 )
 from app.models.locators import Locator, LocatorMethod, LocatorOperate
 from app.extensions import db
@@ -16,7 +18,7 @@ locator_api = Blueprint("locator_api", __name__, url_prefix="/api/locator")
 
 # 1. 获取列表
 @locator_api.route("", methods=["GET"])
-def locator_list():
+def get_locator_list():
     data = get_all_locators()
     return jsonify(data)
     
@@ -56,3 +58,16 @@ def delete_record(id):
         return jsonify({"success": True, "msg": "删除成功"})
     except Exception as e:
         return jsonify({"success": False, "msg": str(e)})
+
+
+@locator_api.route("/method", methods=['GET'])
+def get_methods():
+    return jsonify({
+        "methods": get_all_methods(),
+    })
+
+@locator_api.route("/operate", methods=['GET'])
+def get_operates():
+    return jsonify({
+        "operates": get_all_operates(),
+    })
